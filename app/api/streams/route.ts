@@ -37,8 +37,8 @@ export async function POST(req:NextRequest) {
                 url : data.url,
                 extractedId,
                 title: res.title ?? "cant find video",
-                smallImg : (thumbnails.length > 1 ? thumbnails[thumbnails.length - 2] : thumbnails[thumbnails.length - 1]) ?? "https://t4.ftcdn.net/jpg/02/66/72/41/360_F_266724172_Iy8gdKgMa7XmrhYYxLCxyhx6J7070Pr8.jpg",
-                bigImg : thumbnails[thumbnails.length - 1] ?? "https://t4.ftcdn.net/jpg/02/66/72/41/360_F_266724172_Iy8gdKgMa7XmrhYYxLCxyhx6J7070Pr8.jpg",
+                smallImg : (thumbnails.length > 1 ? thumbnails[thumbnails.length - 2].url : thumbnails[thumbnails.length - 1].url) ?? "https://t4.ftcdn.net/jpg/02/66/72/41/360_F_266724172_Iy8gdKgMa7XmrhYYxLCxyhx6J7070Pr8.jpg",
+                bigImg : thumbnails[thumbnails.length - 1].url ?? "https://t4.ftcdn.net/jpg/02/66/72/41/360_F_266724172_Iy8gdKgMa7XmrhYYxLCxyhx6J7070Pr8.jpg",
                 type : "Youtube"
             }
         })
@@ -48,9 +48,9 @@ export async function POST(req:NextRequest) {
             id : stream.id
         })
     } catch(e) {
+        console.log(e);
         return NextResponse.json({
             message : "error while adding a stream",
-            error: e instanceof Error ? e.message : String(e)
         }, {
             status : 411
         })
@@ -60,13 +60,30 @@ export async function POST(req:NextRequest) {
 
 export async function GET(req : NextRequest) {
     const creatorId = req.nextUrl.searchParams.get("creatorId")
+    if(!creatorId) {
+        return NextResponse.json({
+            message : "Error"
+        }, {
+            status : 411
+        })
+    }
     const streams = await prismaClient.stream.findMany({
         where : {
             userId : creatorId ?? ""
+        },
+        include : {
+            _count : {
+                select : {
+                    upvotes : true
+                }
+            }
         }
     })
 
     return NextResponse.json({
-        streams
-    }) 
+        streams : streams.map(({_count, ...rest})=>({
+            ...rest,
+            upvotes: _count.upvotes
+        }))
+    })  
 }
