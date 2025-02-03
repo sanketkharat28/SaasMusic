@@ -4,7 +4,6 @@ import { Input } from "@/components/ui/input"
 //@ts-ignore
 import { Users, Radio, Headphones } from "lucide-react"
 import { Appbar } from "./components/Appbar"
-import { Redirect } from "./components/Redirect"
 
 export default function LandingPage() {
   return (
