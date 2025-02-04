@@ -4,9 +4,7 @@ import { z } from "zod"
 //@ts-ignore
 import youtubesearchapi from "youtube-search-api"
 import { collectSegmentData } from "next/dist/server/app-render/collect-segment-data";
-var YT_REGEX = /^(?:(?:https?:)?\/\/)?(?:www\.)?(?:m\.)?(?:youtu(?:be)?\.com\/(?:v\/|embed\/|watch(?:\/|\?v=))|youtu\.be\/)((?:\w|-){11})(?:\S+)?$/;
-
-
+import { YT_REGEX } from "@/app/lib/utils";
 
 const CreateStreamSchema = z.object({
     creatorId : z.string(),
@@ -44,8 +42,9 @@ export async function POST(req:NextRequest) {
         })
 
         return NextResponse.json({
-            message : "added stream",
-            id : stream.id
+            ...stream,
+            hasUpvoted : false,
+            upvotes : 0
         })
     } catch(e) {
         console.log(e);
@@ -76,6 +75,11 @@ export async function GET(req : NextRequest) {
                 select : {
                     upvotes : true
                 }
+            },
+            upvotes : {
+                where : {
+                    userId : creatorId
+                }
             }
         }
     })
@@ -83,7 +87,8 @@ export async function GET(req : NextRequest) {
     return NextResponse.json({
         streams : streams.map(({_count, ...rest})=>({
             ...rest,
-            upvotes: _count.upvotes
+            upvotes: _count.upvotes,
+            haveUpvoted : rest.upvotes.length ? true : false
         }))
-    })  
+    }) 
 }
